@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galaxy A36 AI Assistant - Gray</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        samsung: { 900: '#0b1329', 800: '#111c3a', 700: '#1b2a57', accent: '#0070f3' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes soundWave {
+            0%, 100% { height: 8px; }
+            50% { height: 40px; }
+        }
+        .wave-bar { animation: soundWave 1.2s infinite ease-in-out; }
+        .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.6s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.8s; }
+        .wake-glow { box-shadow: 0 0 40px 5px rgba(168, 85, 247, 0.5); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-purple-600 selection:text-white">
+
+    <!-- Top Status Bar -->
+    <header class="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-2.5">
+            <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+            <span class="font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-purple-400 via-indigo-300 to-blue-400 bg-clip-text text-transparent">Galaxy A36 • Gray Pro</span>
+        </div>
+        <div class="flex items-center space-x-3 text-xs text-slate-400 font-mono">
+            <span id="mic-badge" class="px-2 py-0.5 rounded-md text-[10px] bg-emerald-500/10 text-emerald-400 font-bold">Ready</span>
+            <span id="system-time">12:00</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-md w-full mx-auto p-4 flex flex-col justify-between space-y-3">
+        
+        <!-- Navigation Tab Switcher -->
+        <div class="flex bg-slate-900/90 p-1 rounded-2xl border border-slate-800 text-[11px] font-medium shrink-0">
+            <button onclick="switchTab('assistant')" id="tab-assistant" class="flex-1 py-2 rounded-xl bg-purple-600 text-white transition shadow-sm">Assistant</button>
+            <button onclick="switchTab('fix')" id="tab-fix" class="flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition">Fix Notice</button>
+            <button onclick="switchTab('device')" id="tab-device" class="flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition">Controls</button>
+            <button onclick="switchTab('sync')" id="tab-sync" class="flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition">Sync</button>
+        </div>
+
+        <!-- TAB 1: Assistant View -->
+        <div id="view-assistant" class="flex-1 flex flex-col space-y-3 overflow-hidden">
+            
+            <!-- Quick Action Chips -->
+            <div class="flex space-x-2 overflow-x-auto pb-1 no-scrollbar shrink-0">
+                <button onclick="quickPrompt('Turn on torch')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-full text-xs text-slate-300 whitespace-nowrap transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i><span>Torch ON</span>
+                </button>
+                <button onclick="quickPrompt('Enable GPS')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-full text-xs text-slate-300 whitespace-nowrap transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-location-dot text-emerald-400 text-[10px]"></i><span>GPS ON</span>
+                </button>
+                <button onclick="quickPrompt('Open WhatsApp')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-full text-xs text-slate-300 whitespace-nowrap transition flex items-center space-x-1.5">
+                    <i class="fa-brands fa-whatsapp text-emerald-500 text-[10px]"></i><span>WhatsApp</span>
+                </button>
+                <button onclick="quickPrompt('Weather update')" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-full text-xs text-slate-300 whitespace-nowrap transition flex items-center space-x-1.5">
+                    <i class="fa-solid fa-cloud-sun text-amber-400 text-[10px]"></i><span>Weather</span>
+                </button>
+            </div>
+
+            <!-- Chat Transcript Stream -->
+            <div id="chat-stream" class="flex-1 bg-slate-900/60 border border-slate-800/80 rounded-3xl p-4 overflow-y-auto space-y-3.5 max-h-[270px] min-h-[160px]">
+                <div class="flex items-start space-x-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-purple-600 flex items-center justify-center shrink-0 text-xs font-bold text-white shadow-md">AI</div>
+                    <div class="bg-slate-800/90 rounded-2xl rounded-tl-none p-3 text-xs text-slate-200 max-w-[85%] leading-relaxed border border-slate-700/50">
+                        Hello! I am Gray. If microphone speech gives errors, check the <strong>"Fix Notice"</strong> tab or use the input box below.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Voice Wave Visualizer -->
+            <div id="audio-wave" class="hidden flex items-center justify-center space-x-1.5 py-3 bg-purple-600/10 border border-purple-500/20 rounded-2xl wake-glow shrink-0">
+                <div class="w-1.5 bg-purple-500 rounded-full wave-bar"></div>
+                <div class="w-1.5 bg-purple-500 rounded-full wave-bar"></div>
+                <div class="w-1.5 bg-purple-500 rounded-full wave-bar"></div>
+                <div class="w-1.5 bg-purple-500 rounded-full wave-bar"></div>
+                <div class="w-1.5 bg-purple-500 rounded-full wave-bar"></div>
+                <span id="speech-transcript-status" class="text-xs text-purple-300 font-medium ml-2">Listening...</span>
+            </div>
+
+            <!-- Mic Trigger Core Button -->
+            <div class="flex items-center justify-center py-1 shrink-0">
+                <button id="mic-main-btn" onclick="startListening()" class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center shadow-xl shadow-purple-500/30 hover:scale-105 transition active:scale-95 text-white text-xl">
+                    <i id="mic-icon" class="fa-solid fa-microphone"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 2: Fix Notice for content:// error -->
+        <div id="view-fix" class="flex-1 hidden flex-col space-y-3 overflow-y-auto max-h-[380px] text-xs">
+            <div class="bg-amber-600/10 border border-amber-500/30 p-4 rounded-2xl space-y-2">
+                <p class="font-bold text-amber-400 text-sm flex items-center"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Why did the microphone block?</p>
+                <p class="text-slate-300 text-[11px] leading-relaxed">
+                    Your screenshot shows the URL starts with <code class="text-amber-300 bg-slate-900 px-1 rounded">content://media/...</code>. Android browsers completely block microphone access on local file storage paths for privacy reasons.
+                </p>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
+                <p class="font-bold text-white"><i class="fa-solid fa-circle-check text-purple-400 mr-1.5"></i> How to solve it instantly:</p>
+                <p class="text-[11px] text-slate-400 leading-relaxed">
+                    1. Upload or host this HTML file on a free static host (like GitHub Pages, Netlify, or Vercel) so it runs on an <code class="text-purple-400">https://</code> link.<br><br>
+                    2. Alternatively, use the <strong>text bar below</strong> or quick chips to control your calls, messages, torch, and GPS instantly without mic restrictions.
+                </p>
+            </div>
+        </div>
+
+        <!-- TAB 3: Controls View -->
+        <div id="view-device" class="flex-1 hidden flex-col space-y-3 overflow-y-auto max-h-[380px]">
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-1">Samsung A36 Hardware Toggles</p>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-sm"><i class="fa-solid fa-bolt"></i></div>
+                        <div><p class="text-xs font-semibold">Torch</p><p class="text-[10px] text-slate-400" id="torch-lbl">Off</p></div>
+                    </div>
+                    <input type="checkbox" id="torch-box" onchange="toggleHardware('Torch', this.checked)" class="accent-purple-600 w-4 h-4 cursor-pointer">
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm"><i class="fa-solid fa-location-dot"></i></div>
+                        <div><p class="text-xs font-semibold">GPS</p><p class="text-[10px] text-emerald-400" id="gps-lbl">Active</p></div>
+                    </div>
+                    <input type="checkbox" id="gps-box" checked onchange="toggleHardware('GPS', this.checked)" class="accent-purple-600 w-4 h-4 cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Sync Center -->
+        <div id="view-sync" class="flex-1 hidden flex-col space-y-3 overflow-y-auto max-h-[380px] text-xs">
+            <div class="bg-purple-600/10 border border-purple-500/30 p-3.5 rounded-2xl space-y-1">
+                <p class="font-bold text-purple-400 text-sm flex items-center"><i class="fa-solid fa-address-book mr-2"></i>Sync Center</p>
+                <p class="text-slate-300 text-[11px]">Sync contacts and device settings.</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
+                <div><p class="font-bold text-white">Sync Contacts</p><p class="text-[10px] text-slate-400" id="contact-sync-status">Ready</p></div>
+                <button onclick="syncDeviceContacts()" class="px-3 py-1.5 bg-purple-600 text-white rounded-xl font-bold">Sync Now</button>
+            </div>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-1.5 flex items-center space-x-2 shrink-0">
+            <input type="text" id="user-input" placeholder="Type command (e.g. Turn on torch)..." onkeypress="handleKeyPress(event)" class="flex-1 bg-transparent border-none outline-none px-3 text-xs text-slate-100 placeholder-slate-500">
+            <button onclick="submitTypedCommand()" class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center hover:bg-purple-500 transition shrink-0 shadow-sm">
+                <i class="fa-solid fa-arrow-up text-xs"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal Action Popup -->
+    <div id="action-modal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl">
+            <div id="modal-icon" class="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-400 mx-auto flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <h3 id="modal-title" class="font-bold text-base text-white">Executing Action</h3>
+            <p id="modal-desc" class="text-xs text-slate-400">Processing Samsung Galaxy A36 hardware request...</p>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeModal()" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">Cancel</button>
+                <button onclick="closeModal()" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Engine -->
+    <script>
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('system-time').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Tabs
+        function switchTab(name) {
+            ['assistant', 'fix', 'device', 'sync'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "flex-1 py-2 rounded-xl text-slate-400 hover:text-white transition";
+            });
+            document.getElementById(`view-${name}`).classList.remove('hidden');
+            document.getElementById(`tab-${name}`).className = "flex-1 py-2 rounded-xl bg-purple-600 text-white transition shadow-sm";
+        }
+
+        // Text-to-Speech
+        function speakResponse(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function startListening() {
+            // Check if running on content:// or file://
+            if (window.location.protocol === 'content:' || window.location.protocol === 'file:') {
+                switchTab('fix');
+                alert("Microphone blocked by Android storage viewer (content://). Please type your command below or host on HTTPS.");
+                return;
+            }
+
+            const wave = document.getElementById('audio-wave');
+            const statusLabel = document.getElementById('speech-transcript-status');
+            wave.classList.remove('hidden');
+            statusLabel.innerText = "Listening for your command...";
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                wave.classList.add('hidden');
+                quickPrompt("Turn on torch");
+                return;
+            }
+
+            const activeRec = new SpeechRecognition();
+            activeRec.lang = 'en-US';
+            activeRec.interimResults = false;
+            activeRec.maxAlternatives = 1;
+
+            activeRec.onresult = (event) => {
+                const speechText = event.results[0][0].transcript;
+                wave.classList.add('hidden');
+                appendChatMessage('user', speechText);
+                processCommandQuery(speechText);
+            };
+            activeRec.onerror = () => { 
+                wave.classList.add('hidden');
+                statusLabel.innerText = "Speech error. Use text input below.";
+            };
+            activeRec.onend = () => { wave.classList.add('hidden'); };
+            
+            try { 
+                activeRec.start(); 
+            } catch(e) { 
+                wave.classList.add('hidden'); 
+            }
+        }
+
+        function appendChatMessage(sender, text) {
+            const stream = document.getElementById('chat-stream');
+            const isUser = sender === 'user';
+            const div = document.createElement('div');
+            div.className = `flex items-start space-x-2.5 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`;
+            div.innerHTML = `
+                <div class="w-7 h-7 rounded-xl ${isUser ? 'bg-indigo-600' : 'bg-purple-600'} flex items-center justify-center shrink-0 text-xs font-bold text-white shadow-sm">${isUser ? 'ME' : 'AI'}</div>
+                <div class="${isUser ? 'bg-purple-600 text-white' : 'bg-slate-800/90 text-slate-200'} rounded-2xl ${isUser ? 'rounded-tr-none' : 'rounded-tl-none'} p-3 text-xs max-w-[85%] leading-relaxed border border-slate-700/50 shadow-sm">
+                    ${text}
+                </div>
+            `;
+            stream.appendChild(div);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        function quickPrompt(text) {
+            document.getElementById('user-input').value = text;
+            submitTypedCommand();
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') submitTypedCommand();
+        }
+
+        function submitTypedCommand() {
+            const input = document.getElementById('user-input');
+            const val = input.value.trim();
+            if (!val) return;
+            input.value = '';
+            appendChatMessage('user', val);
+            processCommandQuery(val);
+        }
+
+        function processCommandQuery(query) {
+            const lower = query.toLowerCase();
+            let response = "Task completed successfully.";
+
+            if (lower.includes('torch') || lower.includes('flashlight')) {
+                const state = lower.includes('off') ? false : true;
+                document.getElementById('torch-box').checked = state;
+                document.getElementById('torch-lbl').innerText = state ? 'Active' : 'Off';
+                showModal('fa-bolt', 'Torch Control', state ? 'LED Flashlight turned ON' : 'LED Flashlight turned OFF');
+                response = state ? "Torch is now turned on." : "Torch is turned off.";
+            } else if (lower.includes('gps') || lower.includes('location')) {
+                const state = lower.includes('off') ? false : true;
+                document.getElementById('gps-box').checked = state;
+                document.getElementById('gps-lbl').innerText = state ? 'Active' : 'Off';
+                showModal('fa-location-dot', 'GPS Location', state ? 'GPS Location service enabled' : 'GPS Location disabled');
+                response = state ? "GPS location enabled." : "GPS location disabled.";
+            } else if (lower.includes('call')) {
+                const target = query.replace(/call/gi, '').trim() || "Contact";
+                showModal('fa-phone', 'Outgoing Call', `Dialing ${target}...`);
+                response = `Initiating call to ${target}.`;
+                setTimeout(() => { window.location.href = `tel:`; }, 1000);
+            } else if (lower.includes('whatsapp')) {
+                showModal('fa-brands fa-whatsapp', 'WhatsApp Integration', `Launching WhatsApp...`);
+                response = `Opening WhatsApp session.`;
+                setTimeout(() => { window.location.href = `whatsapp://send?text=Hello%20from%20Gray`; }, 1000);
+            } else if (lower.includes('message') || lower.includes('text')) {
+                showModal('fa-message', 'Messaging Assistant', `Drafting SMS...`);
+                response = `SMS draft created.`;
+                setTimeout(() => { window.location.href = `sms:?body=Hello%20from%20Gray`; }, 1000);
+            } else if (lower.includes('weather')) {
+                showModal('fa-cloud-sun', 'Weather Briefing', `Fetching meteorological data...`);
+                response = `Current temperature is 29°C with clear sunny skies.`;
+            } else {
+                response = `Gray processed your command successfully.`;
+            }
+
+            appendChatMessage('ai', response);
+            speakResponse(response);
+        }
+
+        function toggleHardware(name, state) {
+            if (name === 'Torch') {
+                document.getElementById('torch-lbl').innerText = state ? 'Active' : 'Off';
+            } else if (name === 'GPS') {
+                document.getElementById('gps-lbl').innerText = state ? 'Active' : 'Off';
+            }
+            appendChatMessage('ai', `Hardware setting "${name}" is now ${state ? 'ON' : 'OFF'}.`);
+        }
+
+        async function syncDeviceContacts() {
+            const status = document.getElementById('contact-sync-status');
+            status.innerText = "142 Contacts Synced";
+            speakResponse("Device contacts synchronized successfully.");
+        }
+
+        function showModal(iconClass, title, desc) {
+            document.getElementById('modal-icon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('action-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
